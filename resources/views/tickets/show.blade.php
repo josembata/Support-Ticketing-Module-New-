@@ -17,6 +17,7 @@
             <div class="mt-4 text-sm text-gray-600 space-y-1">
                 <p><strong>Created by:</strong> {{ $ticket->creator->name ?? 'N/A' }}</p>
                 <p><strong>Assigned to:</strong> {{ $ticket->assignedAgent->name ?? 'Unassigned' }}</p>
+                <p><strong>Category:</strong> {{ $ticket->category->name ?? 'Uncategorized' }}</p>
                 <p><strong>Status:</strong> <span class="text-blue-700 font-semibold">{{ ucfirst(str_replace('_',' ', $ticket->status)) }}</span></p>
                 <p><strong>Priority:</strong> <span class="capitalize">{{ $ticket->priority }}</span></p>
             </div>

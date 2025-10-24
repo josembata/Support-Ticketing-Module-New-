@@ -21,11 +21,17 @@ class Ticket extends Model
         'status',
         'closed_at',
         'solution',
+        'category_id',
     ];
 
-    protected $casts = [
+protected $casts = [
+    'created_at' => 'datetime',
+    'updated_at' => 'datetime',
     'resolved_at' => 'datetime',
+    'closed_at' => 'datetime',
+    'reopen_at' => 'datetime',
 ];
+
 
 
     // Relationships
@@ -52,6 +58,11 @@ class Ticket extends Model
 public function histories()
 {
     return $this->hasMany(TicketHistory::class, 'ticket_id', 'ticket_id')->latest();
+}
+
+public function category()
+{
+    return $this->belongsTo(TicketCategory::class, 'category_id');
 }
 
 

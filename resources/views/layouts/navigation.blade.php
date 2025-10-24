@@ -18,8 +18,14 @@
                       <x-nav-link :href="route('agents.index')" :active="request()->routeIs('dashboard')">
                         {{ __('Agent') }}
                     </x-nav-link>
+                      <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories')">
+                        {{ __('Ticket Categories') }}
+                    </x-nav-link>
                       <x-nav-link :href="route('tickets.index')" :active="request()->routeIs('dashboard')">
                         {{ __('tickets') }}
+                    </x-nav-link>
+                        <x-nav-link :href="route('tickets.report')" :active="request()->routeIs('dashboard')">
+                        {{ __('Report') }}
                     </x-nav-link>
                 </div>
             </div>

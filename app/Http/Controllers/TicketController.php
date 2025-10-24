@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Notifications\TicketAssignedNotification;
 use App\Notifications\TicketStatusUpdatedNotification;
 use Carbon\Carbon;
+use PDF; 
 
 class TicketController extends Controller
 {
@@ -30,18 +31,29 @@ class TicketController extends Controller
         return view('tickets.index', compact('tickets'));
     }
 
+
+public function show(Ticket $ticket)
+{
+    $ticket->load(['category', 'assignedAgent', 'creator', 'comments.user']);
+
+    return view('tickets.show', compact('ticket'));
+}
+
+
     public function create()
     {
+        $categories = \App\Models\TicketCategory::all();
         $agents = Agent::with('user')->where('status', 'active')->get();
         $priorities = ['low', 'medium', 'high', 'urgent'];
         $statuses = ['open', 'in_progress', 'resolved', 'closed', 'reopened'];
-        return view('tickets.create', compact('agents', 'priorities', 'statuses'));
+        return view('tickets.create', compact('agents', 'priorities','categories', 'statuses'));
     }
 
  public function store(Request $request)
 {
     $validated = $request->validate([
         'title' => 'required|string|max:255',
+        'category_id' => 'nullable|exists:ticket_categories,id',
         'description' => 'required|string',
         'assigned_to' => 'nullable|exists:users,id',
         'priority' => 'required|in:low,medium,high,urgent',
@@ -91,10 +103,7 @@ public function update(Request $request, Ticket $ticket)
         return redirect()->route('tickets.index')->with('success', 'Ticket deleted successfully.');
     }
 
-    public function show(Ticket $ticket)
-    {
-        return view('tickets.show', compact('ticket'));
-    }
+   
 
 
 
@@ -185,7 +194,7 @@ public function reopen(Ticket $ticket)
 
     // allow only within 3 minutes after resolved
     if (! $ticket->resolved_at || now()->diffInMinutes($ticket->resolved_at) > 3) {
-        return redirect()->back()->with('error', 'Reopen period has expired.');
+        return back()->with('success', 'Ticket expired.');
     }
 
     $oldStatus = $ticket->status;
@@ -206,6 +215,30 @@ public function reopen(Ticket $ticket)
 
     return back()->with('success', 'Ticket reopened.');
 }
+
+
+
+public function reportPdf(Request $request)
+{
+    $query = \App\Models\Ticket::query();
+
+    if ($request->filled('category_id')) $query->where('category_id', $request->category_id);
+    if ($request->filled('assigned_to')) $query->where('assigned_to', $request->assigned_to);
+    if ($request->filled('status')) $query->where('status', $request->status);
+    if ($request->filled('from_date')) $query->whereDate('created_at', '>=', $request->from_date);
+    if ($request->filled('to_date')) $query->whereDate('created_at', '<=', $request->to_date);
+
+    $tickets = $query->with(['creator', 'assignedAgent', 'category'])->get();
+
+    // Ensure variables exist for the view
+    $fromDate = $request->from_date ?? null;
+    $toDate   = $request->to_date ?? null;
+
+    $pdf = PDF::loadView('tickets.report_pdf', compact('tickets', 'fromDate', 'toDate'));
+    return $pdf->download('tickets_report_'.now()->format('Ymd_His').'.pdf');
+}
+
+
 
 
 

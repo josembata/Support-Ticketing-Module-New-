@@ -13,6 +13,15 @@
             <label>Title:</label>
             <input type="text" name="title" class="border rounded w-full p-2" required>
 
+            <label for="category_id" class="block text-sm font-medium text-gray-700">Ticket Category</label>
+             <select name="category_id" id="category_id" class="border rounded w-full p-2">
+             <option value="">Select Category</option>
+             @foreach($categories as $category)
+             <option value="{{ $category->id }}">{{ $category->name }}</option>
+             @endforeach
+             </select>
+
+
             <label>Description:</label>
             <textarea name="description" class="border rounded w-full p-2" required></textarea>
 
