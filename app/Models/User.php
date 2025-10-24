@@ -30,29 +30,30 @@ class User extends Authenticatable
         ];
     }
 
-    // ==========================
+    
+    
     // RELATIONSHIPS
-    // ==========================
+    
 
-    /**
-     * Tickets created by the user (customer)
-     */
+    
+     // Tickets created by the user (customer)
+     
     public function createdTickets()
     {
         return $this->hasMany(Ticket::class, 'created_by');
     }
 
-    /**
-     * Tickets assigned to the user (agent)
-     */
+    
+     // Tickets assigned to the user (agent)
+     
     public function assignedTickets()
     {
         return $this->hasMany(Ticket::class, 'assigned_to');
     }
 
-    /**
-     * Comments made by the user
-     */
+    
+     //Comments made by the user
+     
     public function comments()
     {
         return $this->hasMany(TicketComment::class, 'user_id');
