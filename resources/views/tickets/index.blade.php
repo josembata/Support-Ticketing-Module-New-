@@ -1,12 +1,32 @@
 <x-app-layout>
+    
     <x-slot name="header">Tickets List</x-slot>
 
-    <div class="p-6">
-         @if(session('success'))
-        <div class="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
+  @if (session('success'))
+    <div class="bg-green-500 border border-green-400 text-white px-4 py-3 rounded relative mb-3" role="alert">
+        <strong class="font-bold">Success!</strong>
+        <span class="block sm:inline">{{ session('success') }}</span>
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="bg-red-600 border border-red-500 text-white px-4 py-3 rounded relative mb-3" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ session('error') }}</span>
+    </div>
+@endif
+
+@if ($errors->any())
+    <div class="bg-green-500 border border-yellow-400 text-blue-600 px-4 py-3 rounded relative mb-3">
+        <strong class="font-bold">Validation Errors:</strong>
+        <ul class="mt-1 list-disc list-inside">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
         <a href="{{ route('tickets.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded">Create Ticket</a>
         <table class="min-w-full mt-4 border text-left">
             <thead class="bg-gray-100">

@@ -53,7 +53,9 @@ public function report(Request $request)
 
     $tickets = $query->latest()->get();
 
-    return view('tickets.report', compact('tickets', 'categories', 'agents', 'statuses'));
+       $totalTickets = $tickets->count();
+
+    return view('tickets.report', compact('tickets', 'categories', 'agents', 'statuses', 'totalTickets'));
 }
 
 

@@ -1,11 +1,34 @@
 <x-app-layout>
     <x-slot name="header">
          Ticket: {{ $ticket->title }}
-          @if(session('success'))
-        <div class="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
+
+         <!-- error and success -->
+@if (session('success'))
+    <div class="bg-green-500 border border-green-400 text-white px-4 py-3 rounded relative mb-3" role="alert">
+        <strong class="font-bold">Success!</strong>
+        <span class="block sm:inline">{{ session('success') }}</span>
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="bg-red-600 border border-red-500 text-white px-4 py-3 rounded relative mb-3" role="alert">
+        <strong class="font-bold">Error!</strong>
+        <span class="block sm:inline">{{ session('error') }}</span>
+    </div>
+@endif
+
+@if ($errors->any())
+    <div class="bg-green-500 border border-yellow-400 text-blue-600 px-4 py-3 rounded relative mb-3">
+        <strong class="font-bold">Validation Errors:</strong>
+        <ul class="mt-1 list-disc list-inside">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+
     </x-slot>
 
     <div class="p-6 space-y-6">
@@ -22,7 +45,18 @@
                 <p><strong>Priority:</strong> <span class="capitalize">{{ $ticket->priority }}</span></p>
             </div>
 
-{{-- Agent Options --}}
+@php
+    
+    $waitMinutes = 3;
+    $waitMillis = $waitMinutes * 60 * 1000;
+
+    $resolvedAt = $ticket->resolved_at ? \Carbon\Carbon::parse($ticket->resolved_at) : null;
+
+    $elapsedMs = $resolvedAt ? (now()->timestamp * 1000) - ($resolvedAt->timestamp * 1000) : null;
+    $elapsedMs = $elapsedMs ?? 0;
+@endphp
+
+ <!-- AGENT ACTIONS  -->
 @if(Auth::id() === optional($ticket->assignedAgent)->id)
     @if($ticket->status === 'in_progress')
         <form action="{{ route('tickets.resolve', $ticket->ticket_id) }}" method="POST" class="d-inline">
@@ -32,48 +66,127 @@
                 Mark Resolved
             </button>
         </form>
-
     @elseif($ticket->status === 'resolved')
+         <!-- If resolved but within wait  show countdown -->
         @php
-            // Calculate time since resolved
-            $minutesPassed = $ticket->resolved_at ? \Carbon\Carbon::parse($ticket->resolved_at)->diffInMinutes(now()) : 0;
-            $remaining = max(0, 3 - $minutesPassed);
-            $canClose = $minutesPassed >= 3;
+            $canClose = $resolvedAt && now()->diffInMinutes($resolvedAt) >= $waitMinutes;
         @endphp
 
-        @if($canClose)
-            <a href="{{ route('tickets.close.form', $ticket->ticket_id) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-                Close Ticket
-            </a>
+        <span id="agent-close-container">
+            @if($canClose)
+                <a href="{{ route('tickets.close.form', $ticket->ticket_id) }}" class="bg-green-500 text-white px-3 py-1 rounded">
+                    Close Ticket
+                </a>
+            @else
+                <button id="agentCountdownBtn" class="bg-green-500 text-gray-700 px-3 py-1 rounded" disabled>
+                    Close available in --:-- 
+                </button>
+            @endif
+        </span>
+    @endif
+@endif
+
+<!-- USER (CREATOR) ACTIONS  -->
+@if(Auth::id() === $ticket->created_by && $ticket->status === 'resolved')
+    <span id="user-reopen-container">
+        @php
+            $canReopenServer = false;
+            if ($resolvedAt) {
+                $minutesSinceResolved = now()->diffInMinutes($resolvedAt);
+                $canReopenServer = $minutesSinceResolved < $waitMinutes;
+            }
+        @endphp
+
+        @if($canReopenServer)
+            {{-- Show form with active button (we'll update client-side) --}}
+            <form id="reopenForm" action="{{ route('tickets.reopen', $ticket->ticket_id) }}" method="POST" class="inline">
+                @csrf
+                @method('PUT')
+                <button id="userReopenBtn" type="submit" class="bg-green-600 hover:bg-yellow-600 text-white px-3 py-1 rounded">
+                    Reopen Ticket
+                </button>
+            </form>
+
+            <span id="userCountdownText" class="ml-2 text-sm text-gray-600">You can reopen for --:--</span>
         @else
-            <button class="btn btn-secondary" disabled>
-                Close available after {{ $remaining }} mins
+            <button class="bg-blue-600 text-white px-3 py-1 rounded" disabled>
+                Reopen period expired
             </button>
         @endif
-    @endif
+    </span>
 @endif
 
-{{-- User (creator) Reopen Option --}}
-@if(Auth::id() === $ticket->created_by && $ticket->status === 'resolved')
-    @php
-        $minutesSinceResolved = $ticket->resolved_at ? \Carbon\Carbon::parse($ticket->resolved_at)->diffInMinutes(now()) : 0;
-        $canReopen = $minutesSinceResolved <= 3;
-    @endphp
+ <!-- JS Countdown  -->
+@if($ticket->status === 'resolved' && $resolvedAt)
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // configure waitMinutes 
+    const waitMinutes = {{ $waitMinutes }};
+    const waitMillis = waitMinutes * 60 * 1000;
 
-    @if($canReopen)
-        <form action="{{ route('tickets.reopen', $ticket->ticket_id) }}" method="POST" class="d-inline">
-            @csrf
-            @method('PUT')
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-                Reopen Ticket
-            </button>
-        </form>
-    @else
-        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-            Reopen period expired
-        </button>
-    @endif
+    // resolvedAt from server 
+    const resolvedAt = new Date("{{ $resolvedAt->toIso8601String() }}").getTime();
+    const nowClient = new Date().getTime();
+    // start elapse
+    let remaining = waitMillis - (nowClient - resolvedAt);
+
+    function formatMs(ms) {
+        if (ms <= 0) return '00:00';
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    }
+
+    function tick() {
+        remaining = waitMillis - (new Date().getTime() - resolvedAt);
+
+        //  update agentCountdownBtn  to Close button when done
+        const agentBtn = document.getElementById('agentCountdownBtn');
+        const agentContainer = document.getElementById('agent-close-container');
+
+        if (agentBtn) {
+            if (remaining > 0) {
+                agentBtn.innerText = 'Close available in ' + formatMs(remaining);
+            } else {
+                // replace with real Close link
+                if (agentContainer) {
+                    agentContainer.innerHTML = `<a href="{{ route('tickets.close.form', $ticket->ticket_id) }}" class="bg-green-600 text-white px-3 py-1 rounded">Close Ticket</a>`;
+                }
+            }
+        }
+
+        //  update user countdown text and keep reopen active until remaining <= 0
+        const userCountdownText = document.getElementById('userCountdownText');
+        const userReopenBtn = document.getElementById('userReopenBtn');
+        const reopenForm = document.getElementById('reopenForm');
+        const userContainer = document.getElementById('user-reopen-container');
+
+        if (userCountdownText && userReopenBtn) {
+            if (remaining > 0) {
+                userCountdownText.innerText = 'You can reopen for ' + formatMs(remaining);
+                userReopenBtn.disabled = false;
+            } else {
+                // period expired: remove reopen button  show expired label
+                if (userContainer) {
+                    userContainer.innerHTML = `<button class="bg-gray-300 text-gray-600 px-3 py-1 rounded" disabled>Reopen period expired</button>`;
+                }
+            }
+        }
+
+        // continue ticking if time remains, otherwise stop
+        if (remaining > 0) {
+            setTimeout(tick, 1000);
+        }
+    }
+
+    // start ticking
+    tick();
+});
+</script>
 @endif
+
+
 
 
 

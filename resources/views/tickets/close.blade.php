@@ -33,6 +33,7 @@
                         rows="5" 
                         required 
                         minlength="10"
+                        maxlength="60"
                         placeholder="Describe how the issue was resolved..."
                         class="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm p-3 text-gray-700 resize-none"
                     >{{ old('solution') }}</textarea>

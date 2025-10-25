@@ -194,7 +194,7 @@ public function reopen(Ticket $ticket)
 
     // allow only within 3 minutes after resolved
     if (! $ticket->resolved_at || now()->diffInMinutes($ticket->resolved_at) > 3) {
-        return back()->with('success', 'Ticket expired.');
+        return back()->with('error', 'Ticket expired.');
     }
 
     $oldStatus = $ticket->status;
@@ -233,8 +233,9 @@ public function reportPdf(Request $request)
     // Ensure variables exist for the view
     $fromDate = $request->from_date ?? null;
     $toDate   = $request->to_date ?? null;
+     $totalTickets = $tickets->count();
 
-    $pdf = PDF::loadView('tickets.report_pdf', compact('tickets', 'fromDate', 'toDate'));
+    $pdf = PDF::loadView('tickets.report_pdf', compact('tickets', 'fromDate', 'toDate', 'totalTickets'));
     return $pdf->download('tickets_report_'.now()->format('Ymd_His').'.pdf');
 }
 

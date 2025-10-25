@@ -47,6 +47,12 @@
 
     {{-- Table --}}
     <table class="table-auto w-full text-sm border-collapse border border-gray-300">
+        @if(isset($totalTickets))
+    <div class="alert alert-info mt-3">
+        <strong>Total Tickets:</strong> {{ $totalTickets }}
+    </div>
+@endif
+
         <thead class="bg-gray-100">
             <tr>
                 <th class="border px-3 py-2">ID</th>
@@ -75,7 +81,7 @@
                     <td class="border px-3 py-2">{{ $ticket->created_at?->format('Y-m-d H:i') ?? '-' }}</td>
                     <td class="border px-3 py-2">{{ $ticket->resolved_at?->format('Y-m-d H:i') ?? '-' }}</td>
                     <td class="border px-3 py-2">{{ $ticket->closed_at?->format('Y-m-d H:i') ?? '-' }}</td>
-                    <td class="border px-3 py-2">{{ $ticket->reopen_at?->format('Y-m-d H:i') ?? '-' }}</td>
+                    <td class="border px-3 py-2">{{ $ticket->reopened_at?->format('Y-m-d H:i') ?? '-' }}</td>
                 </tr>
             @endforeach
         </tbody>

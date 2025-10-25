@@ -22,6 +22,9 @@ class Ticket extends Model
         'closed_at',
         'solution',
         'category_id',
+        'reopened_at',
+        'resolved_at',
+        
     ];
 
 protected $casts = [
@@ -29,7 +32,7 @@ protected $casts = [
     'updated_at' => 'datetime',
     'resolved_at' => 'datetime',
     'closed_at' => 'datetime',
-    'reopen_at' => 'datetime',
+    'reopened_at' => 'datetime',
 ];
 
 

@@ -25,6 +25,11 @@
         @if($toDate) To: {{ \Carbon\Carbon::parse($toDate)->format('Y-m-d') }} @endif
     </p>
 @endif
+@if(isset($totalTickets))
+    <div class="alert alert-info mt-3">
+        <strong>Total Tickets:</strong> {{ $totalTickets }}
+    </div>
+@endif
 
 
     <table>
